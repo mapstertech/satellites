@@ -42,7 +42,6 @@ class App extends Component {
     }
 
     makeFeature(sat) {
-        console.log('askldjaskldjaskjdsa')
         sat.type = sat.type ? sat.type : "---";
         sat.state = sat.state ? sat.state : "operational"
         var obj = {
