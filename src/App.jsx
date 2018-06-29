@@ -1,11 +1,9 @@
 import React, { Component } from 'react';
-import ReactMapboxGl, { Layer, Feature, GeoJSONLayer } from "react-mapbox-gl";
+import mapboxgl from 'mapbox-gl';
+import * as turf from '@turf/turf';
 import './App.css';
 const satellite = require('satellite.js');
-const style = "mapbox://styles/kevvor/cjilu1fn24pxr2soiib7zlxa8";
-const Map = ReactMapboxGl({
-    accessToken: "pk.eyJ1Ijoia2V2dm9yIiwiYSI6ImNqaWx0ejJkbDJnZ28zcG15NjE5MmR5cGcifQ.3tYja-0fW43DkjRR-ZlmqQ"
-});
+
 
 // var satOrbit = getOrbitFeatures(sat, []);
 
@@ -27,7 +25,7 @@ class App extends Component {
         }
     }
 
-    componentWillMount() {
+    componentDidMount() {
         const { sat } = this.state;
         const orbit = this.getOrbitFeatures(sat, []);
         const geoJSON = {
@@ -35,7 +33,105 @@ class App extends Component {
             "features": orbit
         }
 
-        console.log(JSON.stringify(orbit))
+        mapboxgl.accessToken = 'pk.eyJ1Ijoia2V2dm9yIiwiYSI6ImNqaWx0ejJkbDJnZ28zcG15NjE5MmR5cGcifQ.3tYja-0fW43DkjRR-ZlmqQ';
+        let map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/kevvor/cjilu1fn24pxr2soiib7zlxa8'
+        });
+
+        map.on('load',function() {
+          // Change geoJSONs to polygons using turf buffer
+          console.log(geoJSON)
+          var geoJSONCombined = turf.combine(geoJSON);
+          var geoJSONBuffered = turf.buffer(geoJSONCombined, 100);
+          map.addLayer({
+              'id': 'line-animation',
+              'type': 'fill-extrusion',
+              'source': {
+                  'type': 'geojson',
+                  'data': geoJSONBuffered
+              },
+              'paint': {
+                  'fill-extrusion-color': 'dark green',
+                  'fill-extrusion-opacity': .8,
+                  'fill-extrusion-height': 2005000,
+                  'fill-extrusion-base': 2000000
+              }
+          });
+          map.addLayer({
+              'id': 'line-animation-shadow',
+              'type': 'fill-extrusion',
+              'source': {
+                  'type': 'geojson',
+                  'data': geoJSONBuffered
+              },
+              'paint': {
+                  'fill-extrusion-color': '#333',
+                  'fill-extrusion-opacity': .8,
+                  'fill-extrusion-height': 2000000,
+                  'fill-extrusion-base': 1950000
+              }
+          });
+          map.addLayer({
+              'id': 'line-animation-ground',
+              'type': 'fill',
+              'source': {
+                  'type': 'geojson',
+                  'data': geoJSONBuffered
+              },
+              'paint': {
+                  'fill-color': '#333',
+                  'fill-opacity': .3
+              }
+          });
+          map.addSource('circle-path', {
+            'type': 'geojson',
+            'data': {
+              'type' : 'FeatureCollection',
+              'features' : [{
+                'type' : 'Feature',
+                'properties' : {},
+                'geometry' : {
+                  'type' : 'Point',
+                  'coordinates' : geoJSONCombined.features[0].geometry.coordinates[0]
+                }
+              }]
+            }
+          })
+          map.addLayer({
+              'id': 'circle',
+              'type': 'circle',
+              'source': 'circle-path',
+              'paint': {
+                  'circle-color': 'yellow',
+                  'circle-opacity': 1,
+                  'circle-radius':10
+              }
+          });
+
+          var count = 0;
+          console.log(geoJSONCombined)
+          var max = geoJSONCombined.features[0].geometry.coordinates[0].length;
+          setInterval(function() {
+            map.getSource('circle-path').setData({
+              'type' : 'FeatureCollection',
+              'features' : [{
+                'type' : 'Feature',
+                'properties' : {},
+                'geometry' : {
+                  'type' : 'Point',
+                  'coordinates' : geoJSONCombined.features[0].geometry.coordinates[0][count]
+                }
+              }]
+            })
+            if(count<max) {
+              count += 1;
+            } else {
+              count = 0;
+            }
+          },100);
+
+        });
 
         this.setState({ orbit });
         this.setState({ geoJSON })
@@ -135,7 +231,6 @@ class App extends Component {
     }
 
     getOrbitFeatures(sat, features, samplesStep, samplesTotal, timeOffset) {
-        debugger;
         if (sat.track === undefined) {
             // Generate the orbit;
             sat.track = this.getOrbitTrack(sat, samplesStep, samplesTotal, timeOffset);
@@ -176,16 +271,7 @@ class App extends Component {
     render() {
         return (
             <div className="App">
-                <Map
-                    ref={(c) => (this._map = c)}
-                    style={style}
-                    containerStyle={{ height: "100vh", width: "100vw" }}
-                >
-                    <GeoJSONLayer
-                        data={this.state.geoJSON}
-                        linePaint={this.state.linePaint}
-                    />
-                </Map>
+                <div id="map"></div>
             </div>
         );
     }
