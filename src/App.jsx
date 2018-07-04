@@ -53,7 +53,7 @@ class App extends Component {
         mapboxgl.accessToken = 'pk.eyJ1Ijoia2V2dm9yIiwiYSI6ImNqaWx0ejJkbDJnZ28zcG15NjE5MmR5cGcifQ.3tYja-0fW43DkjRR-ZlmqQ';
         let map = new mapboxgl.Map({
             container: 'map',
-            style: 'mapbox://styles/kevvor/cjilu1fn24pxr2soiib7zlxa8'
+            style: 'mapbox://styles/kevvor/cjj7l2dra2h0c2rnvevp4vkgz'
         });
 
         map.on('load',function() {
@@ -141,10 +141,10 @@ class App extends Component {
                 }
               }]
             })
-            if(count<max) {
-              count += 1;
+            if (count < max - 1) { // count < max throwing an error on the last element.
+                count += 1;
             } else {
-              count = 0;
+                count = 0;
             }
           },100);
 
