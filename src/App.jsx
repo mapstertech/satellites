@@ -15,7 +15,7 @@ class App extends Component {
 
         this.state = {
             idCounter: -1,
-            sat: {
+            sat1: {
                 tleLine1: '1 38709U 12039C   18176.45092306 -.00000027  00000-0  89675-5 0  9994', // from spacetrack.org
                 tleLine2: '2 38709  99.1344 171.7433 0009800 265.5409  94.4650 14.23967048307959',
                 name: 'EXACTVIEW-1',
@@ -23,19 +23,41 @@ class App extends Component {
             },
             lineStringPaint: {
                 "fill-color": "#00ffff",
-            }
+            },
+            sat2: {
+                tleLine1: '1 42731U 98067ML  18176.88404922  .00046109  00000-0  29883-3 0  9990', // from spacetrack.org
+                tleLine2: '2 42731  51.6354 307.4898 0004723 232.8934 127.1635 15.75532352 61829',
+                name: 'I-INSPIRE II',
+                norad_id: '42731',
+            },
+            sat3: {
+                tleLine1: '1 20436U 90005A   18176.88032583 +.00000090 +00000-0 +23903-4 0  9999', // from spacetrack.org
+                tleLine2: '2 20436 098.6457 109.7802 0145045 172.6480 187.6899 14.66343127487802',
+                name: 'SPOT 2',
+                norad_id: '20436',
+            },
+            sat4: {
+                tleLine1: '1 43167U 18010E   18177.02528885  .00002139  00000-0  10651-3 0  9994', // from spacetrack.org
+                tleLine2: '2 43167  82.9205 353.8985 0027045  66.4473 293.9598 15.16701000 23638',
+                name: 'LEMUR 2 TALLHAMN-ATC',
+                norad_id: '43167',
+            },
         }
     }
 
     componentWillMount() {
-        const { sat } = this.state;
-        const orbit = this.getOrbitFeatures(sat, []);
+        // const { sat1 } = this.state;
+        // const orbit = this.getOrbitFeatures(sat1, []);
+
+        const { sat4 } = this.state;
+        const orbit = this.getOrbitFeatures(sat4, [], null, 98);
+
         const geoJSON = {
             "type": "FeatureCollection",
             "features": orbit
         }
 
-        console.log(JSON.stringify(orbit))
+        console.log('ORBIT DATA', JSON.stringify(orbit))
 
         this.setState({ orbit });
         this.setState({ geoJSON })
@@ -77,12 +99,18 @@ class App extends Component {
             date.getUTCSeconds());
 
         var position_eci = position_and_velocity["position"];
+
+        // console.log({ position_eci })
+
         var gmst = satellite.gstime(date.getUTCFullYear(),
             date.getUTCMonth() + 1, // Note, this function requires months in range 1-12.
             date.getUTCDate(),
             date.getUTCHours(),
             date.getUTCMinutes(),
             date.getUTCSeconds());
+
+        // console.log({ gmst })
+
         // Geodetic
         var position_gd = satellite.eciToGeodetic(position_eci, gmst);
 
@@ -96,6 +124,7 @@ class App extends Component {
     }
 
     getOrbitTrack(sat, samplesStep, samplesTotal, timeOffset) {
+        // debugger;
         if (sat.satrec === undefined) {
             try {
                 sat.satrec = satellite.twoline2satrec(sat.tleLine1, sat.tleLine2);
@@ -135,7 +164,7 @@ class App extends Component {
     }
 
     getOrbitFeatures(sat, features, samplesStep, samplesTotal, timeOffset) {
-        debugger;
+        // debugger;
         if (sat.track === undefined) {
             // Generate the orbit;
             sat.track = this.getOrbitTrack(sat, samplesStep, samplesTotal, timeOffset);
@@ -146,6 +175,7 @@ class App extends Component {
         newCounter++;
         this.setState({ idCounter: newCounter })
 
+        // debugger;
         if (sat.track.length > 2) {
             // Add coordinates of the orbit to a feature on the JSON
             var i = 0;
