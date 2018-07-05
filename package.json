@@ -6,6 +6,7 @@
     "@turf/turf": "^5.1.6",
     "mapbox-gl": "^0.46.0",
     "react": "^16.4.1",
+    "react-bootstrap": "^0.32.1",
     "react-dom": "^16.4.1",
     "react-mapbox-gl": "^3.8.0",
     "react-scripts": "1.1.4",
