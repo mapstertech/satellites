@@ -11,7 +11,7 @@ class SideBar extends Component {
                     key={satellite.norad_id}
                     bsSize="large"
                     block
-                    onClick={() => this.props.trackNewSatellite(null, index)}
+                    onClick={() => this.props.handleSatelliteClick(null, index)}
                 >
                     {satellite.name}
                 </Button>
