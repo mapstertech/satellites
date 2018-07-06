@@ -55,13 +55,6 @@ class App extends Component {
                     description: 'Orbit in sync with earth\'s rotation. Appears stationary'
                 },
                 {
-                    tleLine1: '1 25063U 97074A   15166.76390326  .03950263  00000-0  41679-3 0  9996',
-                    tleLine2: '2 25063 034.9372 203.9770 0001344 140.8634 219.2792 16.36482121  1874',
-                    name: 'TRMM',
-                    norad_id: '25063',
-                    description: 'Doesn\t work'
-                },
-                {
                     tleLine1: '1 40730U 15033A   18186.00021044 -.00000060  00000-0  00000+0 0  9997',
                     tleLine2: '2 40730  55.5462  24.5010 0035552 333.3789  26.4850  2.00573674 21766',
                     name: 'NAVSTAR 74',
@@ -74,7 +67,49 @@ class App extends Component {
                     name: 'MOLNIYA 3-50',
                     norad_id: '25847',
                     description: 'Molniya orbit'
-                }
+                },
+                {
+                    tleLine1: '1 29107U 06016A   18187.15803077  .00000077  00000-0  24939-4 0  9993',
+                    tleLine2: '2 29107  98.0781 131.6786 0009118 130.3527 229.8472 14.61347469648395',
+                    name: 'CLOUDSAT',
+                    norad_id: '29107',
+                    description: 'A-Team'
+                },
+                {
+                    tleLine1: '1 29108U 06016B   18187.50031606  .00000065  00000-0  24505-4 0  9990',
+                    tleLine2: '2 29108  98.2026 130.6534 0001435  79.2548 280.8812 14.57109380648329',
+                    name: 'CALIPSO',
+                    norad_id: '29108',
+                    description: 'A-Team'
+                },
+                {
+                    tleLine1: '1 28498U 04049G   18186.76149721 +.00000059 +00000-0 +19195-4 0  9992',
+                    tleLine2: '2 28498 098.3963 251.4461 0015794 173.6368 186.5040 14.68597488722593',
+                    name: 'PARASOL',
+                    norad_id: '28498',
+                    description: 'A-Team'
+                },
+                {
+                    tleLine1: '1 27424U 02022A   18186.88875314 +.00000025 +00000-0 +15684-4 0  9998',
+                    tleLine2: '2 27424 098.2032 127.8058 0002596 043.1725 356.9266 14.57114774860103',
+                    name: 'AQUA',
+                    norad_id: '27424',
+                    description: 'A-Team'
+                },
+                {
+                    tleLine1: '1 25994U 99068A   18186.79385341  .00000097  00000-0  31499-4 0  9991',
+                    tleLine2: '2 25994  98.2039 261.3921 0001108  59.3364 300.7954 14.57111318986537',
+                    name: 'TERRA',
+                    norad_id: '25994',
+                    description: 'A-Team'
+                },
+                {
+                    tleLine1: '1 28376U 04026A   18186.88668616 +.00000034 +00000-0 +17513-4 0  9999',
+                    tleLine2: '2 28376 098.2028 129.9615 0001533 056.3945 303.7400 14.57112951743157',
+                    name: 'AURA',
+                    norad_id: '28376',
+                    description: 'A-Team'
+                },
             ]
         }
     }
@@ -232,7 +267,7 @@ class App extends Component {
         return features;
     }
 
-    hideActiveSatellites() {
+    hideActiveSatellites = () => {
         const { _map, active_satellites } = this.state;
 
         active_satellites.forEach((layerID) => {
@@ -255,8 +290,16 @@ class App extends Component {
             const geoJSON = { "type": "FeatureCollection", "features": orbit }
             const geoJSONCombined = turf.combine(geoJSON);
             const geoJSONBuffered = turf.buffer(geoJSONCombined, 100);
+            const line_animation_ground_id = `line-animation-ground-${norad_id}`;
+            const circle_path_id = `circle-path-${norad_id}`;
+            const circle_id = `circle-${norad_id}`;
+            const line_animation_id = `line-animation-${norad_id}`;
+            const line_animation_shadow_id = `line-animation-shadow-${norad_id}`;
             const combined_coords = [];
 
+            // active_satellites.push(circle_id, line_animation_ground_id, line_animation_shadow_id, line_animation_id);
+
+            console.log(geoJSONCombined)
             geoJSONCombined.features[0].geometry.coordinates.forEach((array) => {
                 array.forEach((ele) => {
                     combined_coords.push(ele);
@@ -265,51 +308,48 @@ class App extends Component {
 
             console.log('NORAD_ID', norad_id);
 
-            const line_animation_id = `line-animation-${norad_id}`;
-            if (_map.getLayer(line_animation_id) !== undefined && _map.getLayoutProperty(line_animation_id, 'visibility') === 'none') {
-                _map.setLayoutProperty(line_animation_id, 'visibility', 'visible');
-            } else if (_map.getLayer(line_animation_id) !== undefined && _map.getLayoutProperty(line_animation_id, 'visibility') === 'visible') {
-                _map.setLayoutProperty(line_animation_id, 'visibility', 'none');
-            } else {
-                _map.addLayer({
-                    'id': line_animation_id,
-                    'type': 'fill-extrusion',
-                    'source': {
-                        'type': 'geojson',
-                        'data': geoJSONBuffered
-                    },
-                    'paint': {
-                        'fill-extrusion-color': 'dark green',
-                        'fill-extrusion-opacity': .8,
-                        'fill-extrusion-height': 2005000,
-                        'fill-extrusion-base': 2000000
-                    }
-                });
-            }
+            // if (_map.getLayer(line_animation_id) !== undefined && _map.getLayoutProperty(line_animation_id, 'visibility') === 'none') {
+            //     _map.setLayoutProperty(line_animation_id, 'visibility', 'visible');
+            // } else if (_map.getLayer(line_animation_id) !== undefined && _map.getLayoutProperty(line_animation_id, 'visibility') === 'visible') {
+            //     _map.setLayoutProperty(line_animation_id, 'visibility', 'none');
+            // } else {
+            //     _map.addLayer({
+            //         'id': line_animation_id,
+            //         'type': 'fill-extrusion',
+            //         'source': {
+            //             'type': 'geojson',
+            //             'data': geoJSONBuffered
+            //         },
+            //         'paint': {
+            //             'fill-extrusion-color': 'dark green',
+            //             'fill-extrusion-opacity': .8,
+            //             'fill-extrusion-height': 2005000,
+            //             'fill-extrusion-base': 2000000
+            //         }
+            //     });
+            // }
 
-            const line_animation_shadow_id = `line-animation-shadow-${norad_id}`;
-            if (_map.getLayer(line_animation_shadow_id) !== undefined && _map.getLayoutProperty(line_animation_shadow_id, 'visibility') === 'none') {
-                _map.setLayoutProperty(line_animation_shadow_id, 'visibility', 'visible');
-            } else if (_map.getLayer(line_animation_shadow_id) !== undefined && _map.getLayoutProperty(line_animation_shadow_id, 'visibility') === 'visible') {
-                _map.setLayoutProperty(line_animation_shadow_id, 'visibility', 'none');
-            } else {
-                _map.addLayer({
-                'id': line_animation_shadow_id,
-                'type': 'fill-extrusion',
-                'source': {
-                    'type': 'geojson',
-                    'data': geoJSONBuffered
-                },
-                'paint': {
-                    'fill-extrusion-color': '#333',
-                    'fill-extrusion-opacity': .8,
-                    'fill-extrusion-height': 2000000,
-                    'fill-extrusion-base': 1950000
-                }
-                });
-            }
+            // if (_map.getLayer(line_animation_shadow_id) !== undefined && _map.getLayoutProperty(line_animation_shadow_id, 'visibility') === 'none') {
+            //     _map.setLayoutProperty(line_animation_shadow_id, 'visibility', 'visible');
+            // } else if (_map.getLayer(line_animation_shadow_id) !== undefined && _map.getLayoutProperty(line_animation_shadow_id, 'visibility') === 'visible') {
+            //     _map.setLayoutProperty(line_animation_shadow_id, 'visibility', 'none');
+            // } else {
+            //     _map.addLayer({
+            //     'id': line_animation_shadow_id,
+            //     'type': 'fill-extrusion',
+            //     'source': {
+            //         'type': 'geojson',
+            //         'data': geoJSONBuffered
+            //     },
+            //     'paint': {
+            //         'fill-extrusion-color': '#333',
+            //         'fill-extrusion-opacity': .8,
+            //         'fill-extrusion-height': 2000000,
+            //         'fill-extrusion-base': 1950000
+            //     }
+            //     });
+            // }
 
-            const line_animation_ground_id = `line-animation-ground-${norad_id}`;
             if (_map.getLayer(line_animation_ground_id) !== undefined && _map.getLayoutProperty(line_animation_ground_id, 'visibility') === 'none') {
                 _map.setLayoutProperty(line_animation_ground_id, 'visibility', 'visible');
             } else if (_map.getLayer(line_animation_ground_id) !== undefined && _map.getLayoutProperty(line_animation_ground_id, 'visibility') === 'visible') {
@@ -329,7 +369,6 @@ class App extends Component {
                 });
             }
 
-            const circle_path_id = `circle-path-${norad_id}`;
             if (_map.getSource(circle_path_id) === undefined) {
                 _map.addSource(circle_path_id, {
                     'type': 'geojson',
@@ -347,7 +386,6 @@ class App extends Component {
                 })
             }
 
-            const circle_id = `circle-${norad_id}`;
             if (_map.getLayer(circle_id) !== undefined && _map.getLayoutProperty(circle_id, 'visibility') === 'none') {
                 _map.setLayoutProperty(circle_id, 'visibility', 'visible');
             } else if (_map.getLayer(circle_id) !== undefined && _map.getLayoutProperty(circle_id, 'visibility') === 'visible') {
@@ -365,32 +403,34 @@ class App extends Component {
                 });
             }
 
-            active_satellites.push(circle_id, line_animation_ground_id, line_animation_shadow_id, line_animation_id)
-            created_satellites.push(norad_id)
-
-            this.setState({ orbit, geoJSON, active_satellites, created_satellites });
 
             let count = 0;
             let max = combined_coords.length;
 
-            setInterval(function() {
-                _map.getSource(`circle-path-${norad_id}`).setData({
-                    'type' : 'FeatureCollection',
-                    'features' : [{
-                    'type' : 'Feature',
-                    'properties' : {},
-                    'geometry' : {
-                        'type' : 'Point',
-                        'coordinates' : combined_coords[count]
+            if (!created_satellites.includes(norad_id)) {
+                setInterval(function() {
+                    _map.getSource(`circle-path-${norad_id}`).setData({
+                        'type' : 'FeatureCollection',
+                        'features' : [{
+                            'type' : 'Feature',
+                            'properties' : {},
+                            'geometry' : {
+                                'type' : 'Point',
+                                'coordinates' : combined_coords[count]
+                            }
+                        }]
+                    })
+                    if (count < max - 1) { // count < max throwing an error on the last element.
+                        count += 1;
+                    } else {
+                        count = 0;
                     }
-                    }]
-                })
-                if (count < max - 1) { // count < max throwing an error on the last element.
-                    count += 1;
-                } else {
-                    count = 0;
-                }
-            }, 200);
+                }, 200);
+            }
+
+            active_satellites.push(circle_id, line_animation_ground_id);
+            created_satellites.push(norad_id);
+            this.setState({ orbit, geoJSON, active_satellites, created_satellites });
         }
     }
 
@@ -401,6 +441,7 @@ class App extends Component {
                 <SideBar
                     satellites={ this.state.satellites }
                     handleSatelliteClick = { this.handleSatelliteClick }
+                    hideActiveSatellites = { this.hideActiveSatellites }
                 />
             </div>
         );

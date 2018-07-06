@@ -22,6 +22,13 @@ class SideBar extends Component {
             <div id="side-bar">
                 <div className="well" style={wellStyles}>
                     {buttons}
+                    <Button
+                        bsSize="large"
+                        block
+                        onClick={() => this.props.hideActiveSatellites()}
+                    >
+                        Hide All
+                    </Button>
                 </div>
             </div>
         )
