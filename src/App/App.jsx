@@ -17,6 +17,9 @@ class App extends Component {
             intervalCounterStar: 0,
             mapLoaded: false,
             _map: null,
+            collapse: {
+                // buttonId: false
+            },
             active_satellite_layers: [],
             created_satellites: [],
             orbitFeatures: {
@@ -81,7 +84,9 @@ class App extends Component {
 
 
     componentDidMount() {
-        const satellites = this.state.satellites;
+        const { satellites }= this.state;
+        const randomSatellite = satellites[Math.floor(Math.random() * satellites.length)];
+
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/kevvor/cjj7l2dra2h0c2rnvevp4vkgz'
@@ -90,9 +95,8 @@ class App extends Component {
         map.on('load', () => {
             if (!this.state.mapLoaded) {
                 this.setState({ mapLoaded: true, _map: map }, () => {
-                    const randomSat = Math.floor(Math.random() * satellites.length);
-                    console.log('maploaded', this.state.mapLoaded)
-                    this.handleSatelliteClick(satellites[randomSat]);
+                    console.log('map loaded?', this.state.mapLoaded)
+                    this.handleSatelliteClick(randomSatellite, null, randomSatellite.norad_id);
                 });
             }
         });
@@ -255,7 +259,8 @@ class App extends Component {
         });
     }
 
-    handleSatelliteClick = async (satelliteObject, index = 0) => {
+    handleSatelliteClick = async (satelliteObject, index = 0, buttonId = null) => {
+        this.toggleCard(buttonId)
         // debugger;
         const { _map, mapLoaded, satellites, active_satellite_layers, created_satellites } = this.state;
         const { samplesStep, samplesTotal, timeOffset } = this.state.orbitFeatures;
@@ -264,19 +269,18 @@ class App extends Component {
             console.log('MAP NOT LOADED');
         } else {
             const satellite = satelliteObject ? satelliteObject : satellites[index];
-            console.log('satellite', satellite)
-            const norad_id = satellite.norad_id
+            const norad_id = satellite.norad_id;
+            const current_satellite = norad_id;
             const orbit = this.getOrbitFeatures(satellite, [], samplesStep, samplesTotal, timeOffset);
-            console.log('orbit', orbit)
-            const geoJSON = { "type": "FeatureCollection", "features": orbit }
+            const geoJSON = { "type": "FeatureCollection", "features": orbit };
             const geoJSONCombined = turf.combine(geoJSON);
-            const geoJSONBuffered = turf.buffer(geoJSONCombined, 100);
-            const line_animation_ground_id = `line-animation-ground-${norad_id}`;
             const circle_path_id = `circle-path-${norad_id}`;
             const circle_id = `circle-${norad_id}`;
-            const line_animation_id = `line-animation-${norad_id}`;
-            const line_animation_shadow_id = `line-animation-shadow-${norad_id}`;
             const combined_coords = [];
+            // const geoJSONBuffered = turf.buffer(geoJSONCombined, 100);
+            // const line_animation_ground_id = `line-animation-ground-${norad_id}`;
+            // const line_animation_id = `line-animation-${norad_id}`;
+            // const line_animation_shadow_id = `line-animation-shadow-${norad_id}`;
 
             console.log('active_satellite_layers', active_satellite_layers)
             await this.hideActiveSatellites();
@@ -387,16 +391,31 @@ class App extends Component {
             // active_satellite_layers.push(circle_id, line_animation_ground_id);
             active_satellite_layers.push(circle_id);
             created_satellites.push(norad_id);
-            this.setState({ orbit, geoJSON, active_satellite_layers, created_satellites }, () =>{console.log(active_satellite_layers)});
+            this.setState({ orbit, geoJSON, active_satellite_layers, created_satellites, current_satellite });
         }
     }
 
+    toggleCard = (id) => {
+        if (!id || id === this.state.current_satellite) {
+            return;
+        }
+        this.setState((prevState) => {
+            return {
+                collapse: {
+                    [id]: !prevState.collapse[id]
+                }
+            }
+        });
+    }
+
     render() {
+        const { satellites, collapse} = this.state;
         return (
             <div className="App">
                 <div id="map"></div>
                 <SideBar
-                    satellites={ this.state.satellites }
+                    collapse = { collapse }
+                    satellites={ satellites }
                     handleSatelliteClick = { this.handleSatelliteClick }
                     hideActiveSatellites = { this.hideActiveSatellites }
                 />
