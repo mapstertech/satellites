@@ -20,7 +20,6 @@ class App extends Component {
             active_satellite_layers: [],
             created_satellites: [],
             orbitFeatures: {
-                features: [],
                 samplesStep: 60 * 3,    // one coord pair for every 60 seconds
                 // samplesTotal: 2417, // 1440 minutes in a day // 1417 -> magic number?
                 samplesTotal: 1417 / 3, // 1440 minutes in a day // 1417 -> magic number?
@@ -198,6 +197,7 @@ class App extends Component {
     }
 
     getOrbitFeatures(sat, features, samplesStep, samplesTotal, timeOffset) {
+        // debugger;
         if (sat.track === undefined) {
             // Generate the orbit;
             sat.track = this.getOrbitTrack(sat, samplesStep, samplesTotal, timeOffset);
@@ -258,17 +258,16 @@ class App extends Component {
     handleSatelliteClick = async (satelliteObject, index = 0) => {
         // debugger;
         const { _map, mapLoaded, satellites, active_satellite_layers, created_satellites } = this.state;
-        const { features, samplesStep, samplesTotal, timeOffset } = this.state.orbitFeatures;
+        const { samplesStep, samplesTotal, timeOffset } = this.state.orbitFeatures;
 
         if (!mapLoaded) {
             console.log('MAP NOT LOADED');
         } else {
             const satellite = satelliteObject ? satelliteObject : satellites[index];
-
             console.log('satellite', satellite)
-
             const norad_id = satellite.norad_id
-            const orbit = this.getOrbitFeatures(satellite, features, samplesStep, samplesTotal, timeOffset);
+            const orbit = this.getOrbitFeatures(satellite, [], samplesStep, samplesTotal, timeOffset);
+            console.log('orbit', orbit)
             const geoJSON = { "type": "FeatureCollection", "features": orbit }
             const geoJSONCombined = turf.combine(geoJSON);
             const geoJSONBuffered = turf.buffer(geoJSONCombined, 100);
@@ -285,7 +284,8 @@ class App extends Component {
 
             // active_satellite_layers.push(circle_id, line_animation_ground_id, line_animation_shadow_id, line_animation_id);
 
-            console.log(geoJSONCombined)
+
+            console.log('combined_coords START', combined_coords)
             geoJSONCombined.features[0].geometry.coordinates.forEach((array) => {
                 array.forEach((ele) => {
                     combined_coords.push(ele);
@@ -293,48 +293,6 @@ class App extends Component {
             });
 
             console.log('NORAD_ID', norad_id);
-
-            // if (_map.getLayer(line_animation_id) !== undefined && _map.getLayoutProperty(line_animation_id, 'visibility') === 'none') {
-            //     _map.setLayoutProperty(line_animation_id, 'visibility', 'visible');
-            // } else if (_map.getLayer(line_animation_id) !== undefined && _map.getLayoutProperty(line_animation_id, 'visibility') === 'visible') {
-            //     _map.setLayoutProperty(line_animation_id, 'visibility', 'none');
-            // } else {
-            //     _map.addLayer({
-            //         'id': line_animation_id,
-            //         'type': 'fill-extrusion',
-            //         'source': {
-            //             'type': 'geojson',
-            //             'data': geoJSONBuffered
-            //         },
-            //         'paint': {
-            //             'fill-extrusion-color': 'dark green',
-            //             'fill-extrusion-opacity': .8,
-            //             'fill-extrusion-height': 2005000,
-            //             'fill-extrusion-base': 2000000
-            //         }
-            //     });
-            // }
-
-            // if (_map.getLayer(line_animation_shadow_id) !== undefined && _map.getLayoutProperty(line_animation_shadow_id, 'visibility') === 'none') {
-            //     _map.setLayoutProperty(line_animation_shadow_id, 'visibility', 'visible');
-            // } else if (_map.getLayer(line_animation_shadow_id) !== undefined && _map.getLayoutProperty(line_animation_shadow_id, 'visibility') === 'visible') {
-            //     _map.setLayoutProperty(line_animation_shadow_id, 'visibility', 'none');
-            // } else {
-            //     _map.addLayer({
-            //     'id': line_animation_shadow_id,
-            //     'type': 'fill-extrusion',
-            //     'source': {
-            //         'type': 'geojson',
-            //         'data': geoJSONBuffered
-            //     },
-            //     'paint': {
-            //         'fill-extrusion-color': '#333',
-            //         'fill-extrusion-opacity': .8,
-            //         'fill-extrusion-height': 2000000,
-            //         'fill-extrusion-base': 1950000
-            //     }
-            //     });
-            // }
 
             // if (_map.getLayer(line_animation_ground_id) !== undefined && _map.getLayoutProperty(line_animation_ground_id, 'visibility') === 'none') {
             //     _map.setLayoutProperty(line_animation_ground_id, 'visibility', 'visible');
