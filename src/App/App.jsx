@@ -14,10 +14,18 @@ class App extends Component {
 
         this.state = {
             idCounter: -1,
+            intervalCounterStar: 0,
             mapLoaded: false,
             _map: null,
-            active_satellites: [],
+            active_satellite_layers: [],
             created_satellites: [],
+            orbitFeatures: {
+                features: [],
+                samplesStep: 60 * 3,    // one coord pair for every 60 seconds
+                // samplesTotal: 2417, // 1440 minutes in a day // 1417 -> magic number?
+                samplesTotal: 1417 / 3, // 1440 minutes in a day // 1417 -> magic number?
+                timeOffset: null
+            },
             satellites: [
                 {
                     tleLine1: '1 38709U 12039C   18176.45092306 -.00000027  00000-0  89675-5 0  9994', // from spacetrack.org
@@ -125,8 +133,9 @@ class App extends Component {
         map.on('load', () => {
             if (!this.state.mapLoaded) {
                 this.setState({ mapLoaded: true, _map: map }, () => {
+                    const randomSat = Math.floor(Math.random() * satellites.length);
                     console.log('maploaded', this.state.mapLoaded)
-                    this.handleSatelliteClick(satellites[0]);
+                    this.handleSatelliteClick(satellites[randomSat]);
                 });
             }
         });
@@ -267,26 +276,41 @@ class App extends Component {
         return features;
     }
 
-    hideActiveSatellites = () => {
-        const { _map, active_satellites } = this.state;
+    hideActiveSatellites = async () => {
+        const { _map, active_satellite_layers } = this.state;
 
-        active_satellites.forEach((layerID) => {
+        if (active_satellite_layers.length === 0) {
+            console.log('no active satellite layers')
+            return;
+        }
+
+        active_satellite_layers.forEach((layerID) => {
+            // debugger;
             if (_map && _map.getLayoutProperty(layerID, 'visibility') === 'visible') {
                 _map.setLayoutProperty(layerID, 'visibility', 'none');
+
             }
+            console.log(_map.getLayoutProperty(layerID, 'visibility'))
         });
-        this.setState({ active_satellites: [] });
+        await this.setState({ active_satellite_layers: [] }, () => {
+            console.log('active_satellite_layers CALLBACK', active_satellite_layers)
+        });
     }
 
-    handleSatelliteClick = (satelliteObject, index = 0) => {
-        const { _map, mapLoaded, satellites, active_satellites, created_satellites } = this.state;
+    handleSatelliteClick = async (satelliteObject, index = 0) => {
+        // debugger;
+        const { _map, mapLoaded, satellites, active_satellite_layers, created_satellites } = this.state;
+        const { features, samplesStep, samplesTotal, timeOffset } = this.state.orbitFeatures;
 
         if (!mapLoaded) {
             console.log('MAP NOT LOADED');
         } else {
             const satellite = satelliteObject ? satelliteObject : satellites[index];
+
+            console.log('satellite', satellite)
+
             const norad_id = satellite.norad_id
-            const orbit = this.getOrbitFeatures(satellite, [], 60, 160, null);
+            const orbit = this.getOrbitFeatures(satellite, features, samplesStep, samplesTotal, timeOffset);
             const geoJSON = { "type": "FeatureCollection", "features": orbit }
             const geoJSONCombined = turf.combine(geoJSON);
             const geoJSONBuffered = turf.buffer(geoJSONCombined, 100);
@@ -297,7 +321,11 @@ class App extends Component {
             const line_animation_shadow_id = `line-animation-shadow-${norad_id}`;
             const combined_coords = [];
 
-            // active_satellites.push(circle_id, line_animation_ground_id, line_animation_shadow_id, line_animation_id);
+            console.log('active_satellite_layers', active_satellite_layers)
+            await this.hideActiveSatellites();
+            console.log('active_satellite_layers', active_satellite_layers)
+
+            // active_satellite_layers.push(circle_id, line_animation_ground_id, line_animation_shadow_id, line_animation_id);
 
             console.log(geoJSONCombined)
             geoJSONCombined.features[0].geometry.coordinates.forEach((array) => {
@@ -350,24 +378,24 @@ class App extends Component {
             //     });
             // }
 
-            if (_map.getLayer(line_animation_ground_id) !== undefined && _map.getLayoutProperty(line_animation_ground_id, 'visibility') === 'none') {
-                _map.setLayoutProperty(line_animation_ground_id, 'visibility', 'visible');
-            } else if (_map.getLayer(line_animation_ground_id) !== undefined && _map.getLayoutProperty(line_animation_ground_id, 'visibility') === 'visible') {
-                _map.setLayoutProperty(line_animation_ground_id, 'visibility', 'none');
-            } else {
-                _map.addLayer({
-                    'id': line_animation_ground_id,
-                    'type': 'fill',
-                    'source': {
-                        'type': 'geojson',
-                        'data': geoJSONBuffered
-                    },
-                    'paint': {
-                        'fill-color': '#333',
-                        'fill-opacity': .3
-                    }
-                });
-            }
+            // if (_map.getLayer(line_animation_ground_id) !== undefined && _map.getLayoutProperty(line_animation_ground_id, 'visibility') === 'none') {
+            //     _map.setLayoutProperty(line_animation_ground_id, 'visibility', 'visible');
+            // } else if (_map.getLayer(line_animation_ground_id) !== undefined && _map.getLayoutProperty(line_animation_ground_id, 'visibility') === 'visible') {
+            //     _map.setLayoutProperty(line_animation_ground_id, 'visibility', 'none');
+            // } else {
+            //     _map.addLayer({
+            //         'id': line_animation_ground_id,
+            //         'type': 'fill',
+            //         'source': {
+            //             'type': 'geojson',
+            //             'data': geoJSONBuffered
+            //         },
+            //         'paint': {
+            //             'fill-color': '#333',
+            //             'fill-opacity': .3
+            //         }
+            //     });
+            // }
 
             if (_map.getSource(circle_path_id) === undefined) {
                 _map.addSource(circle_path_id, {
@@ -404,8 +432,19 @@ class App extends Component {
             }
 
 
-            let count = 0;
+            let count = this.state.intervalCounterStar;
             let max = combined_coords.length;
+            let match = false;
+            console.dir(combined_coords);
+            console.log('first coordinate in combined_coords:', combined_coords[0]);
+
+            for (let i = 1; i < max; i++) {
+                if (combined_coords[i] === combined_coords[0]) {
+                    match = true;
+                }
+            }
+
+            console.log('MATCH FOUND:', match)
 
             if (!created_satellites.includes(norad_id)) {
                 setInterval(function() {
@@ -425,12 +464,14 @@ class App extends Component {
                     } else {
                         count = 0;
                     }
-                }, 200);
+                }, 100);
             }
 
-            active_satellites.push(circle_id, line_animation_ground_id);
+            // active_satellite_layers.push(circle_id, line_animation_ground_id, line_animation_id);
+            // active_satellite_layers.push(circle_id, line_animation_ground_id);
+            active_satellite_layers.push(circle_id);
             created_satellites.push(norad_id);
-            this.setState({ orbit, geoJSON, active_satellites, created_satellites });
+            this.setState({ orbit, geoJSON, active_satellite_layers, created_satellites }, () =>{console.log(active_satellite_layers)});
         }
     }
 
